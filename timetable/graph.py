@@ -14,7 +14,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from langgraph.checkpoint.memory import MemorySaver
 
-from model import create_and_solve_timetable_model
+from timetable.model import create_and_solve_timetable_model
 
 
 set_debug(False)
