@@ -1,8 +1,50 @@
 # Quickstart
 
 
+## Generic Optimiser
 
-## Install Dependencies
+### Install Dependencies:
+
+1. Create virtual environment and install pip packages
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+2. Ensure you have a [trial guropbipy license](https://www.gurobi.com/free-trial/):
+
+### Run Assistant
+```bash
+python -m  generic.graph
+```
+
+
+### Usage
+
+
+
+As a user you may ask the bot to solve an optimisation problem:
+```
+User: 
+
+The company BIM (Best International Machines) produces two types of microchips, logic chips (1g silicon, 1g plastic, 4g copper) and memory chips (1g germanium, 1g plastic, 2g copper). Each of the logic chips can be sold for a 12€ profit, and each of the memory chips for a 9€ profit. The current stock of raw materials is as follows: 1000g silicon, 1500g germanium, 1750g plastic, 4800g copper. How many microchips of each type should be produced to maximize profit while respecting the availability of raw material stock?
+```
+
+
+
+   
+
+
+
+
+
+## Timetable Optimiser
+
+
+
+### Install Dependencies
 
 1. Install glpk solver
 ```bash
@@ -17,14 +59,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run Assistant
+### Run Assistant
 
 ```bash
 python graph.py
 ```
 
 
-## Usage
+### Usage
 
 As a user you may ask a question to the bot:
 ```
