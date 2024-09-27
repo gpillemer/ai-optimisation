@@ -2,10 +2,12 @@ import gurobipy as gp
 from gurobipy import GRB
 from itertools import product
 from collections.abc import Iterable
-
+import json
 
 
 def create_and_solve_generic_model(model_data):
+    with open("model_data.json", "w") as f:
+        json.dump(model_data, f)
     # Create the model
     model = gp.Model(model_data["model_name"])
 
@@ -89,9 +91,17 @@ def create_and_solve_generic_model(model_data):
             "indices", {}
         )  # Dictionary of index variable names to set names
         expression = constraint_data["expression"]
+    if indices:
         # Get index variable names and their corresponding sets
         index_var_names = list(indices.keys())
-        index_sets = [sets[set_name] for set_name in indices.values()]
+        try:
+            index_sets = [sets[set_name] for set_name in indices.values()]
+        except KeyError as e:
+            raise KeyError(f"Set '{e.args[0]}' not found in 'sets' for constraint {constraint_name}.")
+    else:
+        # No indices provided, this is a scalar constraint
+        index_var_names = []
+        index_sets = []
         # Create all combinations of indices
         index_combinations = list(product(*index_sets)) if index_sets else [()]
         for index_tuple in index_combinations:
@@ -124,6 +134,9 @@ def create_and_solve_generic_model(model_data):
     if model.status == GRB.OPTIMAL:
         output_string = "\nOptimal solution found:\n"
         print("\nOptimal solution found:")
+        objective_value = model.ObjVal
+        print(f"Objective value: {objective_value}")
+        output_string += f"Objective value: {objective_value}\n"
 
         # Loop through all variables in the model
         for var_name, var in variables.items():
@@ -164,6 +177,84 @@ def create_and_solve_generic_model(model_data):
 
 
 if __name__ == "__main__":
+    model_data = {
+  "model_name": "FuelDistribution",
+  "sets": {
+    "Franchisees": ["Alice", "Badri", "Cara", "Dan", "Emma", "Fujita", "Grace", "Helen"],
+    "Terminals": ["Current Supplier", "Terminal A", "Terminal B"]
+  },
+  "parameters": {
+    "Demand": {
+      "Alice": 30000,
+      "Badri": 40000,
+      "Cara": 50000,
+      "Dan": 20000,
+      "Emma": 30000,
+      "Fujita": 45000,
+      "Grace": 80000,
+      "Helen": 18000
+    },
+    "SupplyConstraint": {
+      "Current Supplier": 500000,
+      "Terminal A": 100000,
+      "Terminal B": 80000
+    },
+    "Cost": {
+      "Current Supplier": {
+        "Alice": 8.75,
+        "Badri": 8.75,
+        "Cara": 8.75,
+        "Dan": 8.75,
+        "Emma": 8.75,
+        "Fujita": 8.75,
+        "Grace": 8.75,
+        "Helen": 8.75
+      },
+      "Terminal A": {
+        "Alice": 8.3,
+        "Badri": 8.1,
+        "Cara": 8.3,
+        "Dan": 9.3,
+        "Emma": 10.1,
+        "Fujita": 9.8,
+        "Grace": None,
+        "Helen": 7.5
+      },
+      "Terminal B": {
+        "Alice": 10.2,
+        "Badri": 12,
+        "Cara": None,
+        "Dan": 8,
+        "Emma": 10,
+        "Fujita": 10,
+        "Grace": 8,
+        "Helen": 10
+      }
+    }
+  },
+  "variables": {
+    "x": {
+      "indices": {"i": "Franchisees", "j": "Terminals"},
+      "type": "Continuous",
+      "lower_bound": 0,
+      "upper_bound": "GRB.INFINITY"
+    }
+  },
+  "objective": {
+    "sense": "minimize",
+    "expression": "gp.quicksum(variables['x'][i,j] * parameters['Cost'][j][i] for i in sets['Franchisees'] for j in sets['Terminals'] if parameters['Cost'][j][i] is not None)"
+  },
+  "constraints": {
+    "DemandConstraint": {
+      "indices": {"i": "Franchisees"},
+      "expression": "gp.quicksum(variables['x'][i,j] for j in sets['Terminals'] if parameters['Cost'][j][i] is not None) == parameters['Demand'][i]"
+    },
+    "SupplyConstraint": {
+      "indices": {"j": "Terminals"},
+      "expression": "gp.quicksum(variables['x'][i,j] for i in sets['Franchisees'] if parameters['Cost'][j][i] is not None) <= parameters['SupplyConstraint'][j]"
+    }
+  }
+}
 
     # Problem Description
 

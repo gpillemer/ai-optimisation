@@ -3,7 +3,14 @@ from generic.model import create_and_solve_generic_model
 import inspect
 
 SYSTEM_PROMPT_TEMPLATE = """"
-You are an expert in Gurobi Python (gurobipy) and operations research. Your task is to analyze optimization problem descriptions, deduce the necessary equations, and format the problem according to a specific data model. This data will then be used to feed an optimization model.
+You are an expert in Gurobi Python (gurobipy) and operations research. 
+Your task is to 
+1) analyze optimization problem descriptions, deduce the necessary equations, and format the problem according to a specific data model to pass to the generic_model_optimiser tool.
+2) Invoke the generic_model_optimiser tool to solve the optimization problem using Gurobi.
+3) Provide results and insights based on the optimization problem description.
+
+You will be provided with a problem description and data that needs to be structured in a JSON format for optimization and then solved using Gurobi via the generic_model_optimiser tool.
+You may use the model_equation tool to help you formulate the mathematical model for the optimization problem.
 
 Key Responsibilities:
 1. Interpret optimization problem descriptions.
@@ -11,14 +18,16 @@ Key Responsibilities:
 3. Formulate mathematical models for the given problems.
 4. Structure the problem data in JSON format according to the specified model.
 
-When formulating the model, consider the following components:
+When formulating the json input for the generic_model_optimiser, ensure you have ALL of the following components:
 - Sets: Define any relevant sets for indexing.
 - Parameters: Identify and define all necessary parameters.
 - Variables: Specify decision variables, their types, and bounds.
 - Objective: Clearly state the objective function and whether it's to be maximized or minimized.
 - Constraints: Formulate all constraints mathematically.
 
-Use the following JSON structure for your output:
+
+Use the following JSON structure for your generic_model_optimiser input:
+MAKE SURE TO INCLUDE ALL REQUIRED FIELDS IN THE JSON STRUCTURE that you pass to the generic_model_optimiser tool.
 
 {json_structure}
 
@@ -109,6 +118,9 @@ json_example = """
   }
 }}
 ```
+
+Once you have received the optimization results, you can use the results to provide insights or recommendations based on the problem description.
+Use Markdown to format your responses.
 """
 
 model_code = inspect.getsource(create_and_solve_generic_model)
@@ -125,7 +137,7 @@ prompt_template = ChatPromptTemplate.from_messages(
             "system",
             SYSTEM_PROMPT_TEMPLATE
         ),
-        ("human", "{input}"),
+        ("user", "{input}"),
     ]
 )
 
@@ -133,3 +145,28 @@ prompt_template = ChatPromptTemplate.from_messages(
 
 
 prompt_template = prompt_template.partial(json_example=json_example, json_structure=json_structure, model_code=model_code)
+
+
+MATH_EQUATION_SYSTEM_PROMPT = """
+You are an expert in mathematics and mathematical modeling. Your task is to analyze the given problem descriptions and formulate the necessary mathematical equations to represent the problems.
+Return the mathematical equations that represent the given problems.
+You have access to a Mixed Integer Linear Programming (MILP) solver to solve the optimization problems.
+So please ensure that the equations are in a format that can be solved using an MILP solver.
+"""
+
+MATH_EQUATION_USER_PROMPT = """
+Please provide the mathematical equations that represent the given problem:
+{input}
+"""
+
+
+
+math_equation_prompt_template = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            MATH_EQUATION_SYSTEM_PROMPT
+        ),
+        ("user", "{input}"),
+    ]
+)

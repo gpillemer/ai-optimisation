@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from anthropic import Anthropic
 from bs4 import BeautifulSoup
 import os
+import json
+import yaml
 
+from generic.graph import graph
 from utils.prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
 
 # Initialize session state variables if they don't exist
@@ -12,6 +16,8 @@ def initialize_session_state():
     st.session_state.setdefault("dfs_string", "")
     st.session_state.setdefault("problem_statement", "")
     st.session_state.setdefault("uploaded_files", None)
+    st.session_state.setdefault("result_message", "")
+    st.session_state.setdefault("results_placeholder", None)
 
 initialize_session_state()
 
@@ -20,16 +26,45 @@ client = Anthropic()
 
 
 # Helper function to collect optimization data
-def collect_optimization_data():
-    data = {k: str(v) for k, v in st.session_state.items() 
-            if k not in ["application_code", "dfs_string", "uploaded_files", "run_optimization", "load_application"] 
-            and not k.startswith("_")}
-    print(data)
-    return data
+
+def clear_session():
+    session_dir = os.path.join("session")
+    for file in os.listdir(session_dir):
+        if file.startswith("data-"):
+            os.remove(os.path.join(session_dir, file))
+
+def collect_optimization_data(state):
+    # data = {}
+    # for k, v in st.session_state.items():
+    #     # if k not in ["application_code", "result_message","results_placeholder", "uploaded_files", "run_optimization", "load_application"] and not k.startswith("_"):
+    #     data[k] = str(st.session_state[k])
+    # print(data)
+    data = {}
+    for k, v in state.items():
+        if k not in ["application_code", "result_message","results_placeholder", "uploaded_files", "run_optimization", "load_application"] and not k.startswith("_"):
+            data[k] = str(state[k])
+    with open(os.path.join("session","optimization_data.json"), "w") as f:
+        json.dump(data, f)
+    return yaml.dump(data)
 
 # Run optimization function
-def run_optimization():
-    collect_optimization_data()
+def run_optimization(state):
+    clear_session()
+    st.session_state.result_message = ""
+    st.session_state.results_placeholder.empty()
+    user_input = collect_optimization_data(state)
+    print("user_input", user_input)
+    config = {"configurable": {"thread_id": "1"}}
+    for event in graph.stream({"messages": ("user", user_input)}, config=config):
+        for value in event.values():
+            print("Assistant:", value["messages"][-1].content)
+            if type(value["messages"][-1].content) == str:
+                st.session_state.result_message += value["messages"][-1].content
+            st.session_state.results_placeholder.markdown(st.session_state.result_message)
+            # results_placeholder.markdown(st.session_state.results)
+            # print("Assistant:", value["messages"][-1].content)
+
+
 
 # Load application code from file
 def load_application():
@@ -66,6 +101,7 @@ def create_application(example_data, problem_statement):
         messages=[{"role": "user", "content": CREATE_APPLICATION_USER_PROMPT.format(dataset=example_data, problem_statement=problem_statement)}]
     )
     application_code = response.content[0].text
+    print(response.content)
     st.session_state.application_code = get_output(application_code)
     
     with open(os.path.join("session","current_application.py"), "w") as f:
@@ -117,11 +153,14 @@ def page_two():
     else:
         try:
             exec(st.session_state.application_code)
+            if not st.session_state.results_placeholder:
+                st.session_state.results_placeholder = st.empty()
+                
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
 # Sidebar navigation
-st.sidebar.title("Navigation")
+st.sidebar.title("DAISY Decision AI System")
 page = st.sidebar.radio("Go to", ["Application Generator", "Current Application"])
 
 # Page routing

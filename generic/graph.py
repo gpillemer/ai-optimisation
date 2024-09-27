@@ -1,9 +1,11 @@
 from typing import Annotated, List, Optional, Type, Literal
-
+import json
 from typing_extensions import TypedDict
 from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 from typing import Dict, List, Literal, Union, Optional
+import uuid
+import os
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
@@ -18,7 +20,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.prompts import ChatPromptTemplate
 
-from generic.prompt import create_and_solve_generic_model, prompt_template
+from generic.prompt import create_and_solve_generic_model, prompt_template, math_equation_prompt_template
 
 set_debug(True)
 set_verbose(True)
@@ -47,7 +49,7 @@ class Constraint(BaseModel):
     indices: Optional[Dict[str, str]] = None
     expression: str
 
-ParameterValue = Union[int, float, Dict[str, Union[int, float, Dict[str, Union[int, float]]]]]
+ParameterValue = Union[int, float, Dict[str, Union[None,int, float,str, Dict[str, Union[int, float, None,str]]]]]
 
 class GenericModelDataInput(BaseModel):
     model_name: str
@@ -59,6 +61,13 @@ class GenericModelDataInput(BaseModel):
 
 class GenericModelOptimiserSchema(BaseModel):
     input: GenericModelDataInput
+
+    def __init__(self, **data):
+        # Dump the input data to JSON before validation
+        with open(os.path.join("session",f"data-{uuid.uuid4()}.json"), "w") as f:
+            json.dump(data, f)
+        # Call the original `__init__` method to continue the validation
+        super().__init__(**data)
 
 class GenericModelOptimiserTool(BaseTool):
     name = "generic_model_optimiser"
@@ -72,18 +81,30 @@ class GenericModelOptimiserTool(BaseTool):
         data = input.model_dump()
         return create_and_solve_generic_model(data)
 
+# llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
+llm = ChatOpenAI(model="gpt-4o")
 
-tools = [GenericModelOptimiserTool()]
-llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
+model_equation_chain = math_equation_prompt_template | llm
+
+model_equation_tool = model_equation_chain.as_tool(
+    name="model_equation_tool",
+    description="Use the model equation tool when first given a problem statement to generate the model equations",
+
+)
+tools = [GenericModelOptimiserTool(), model_equation_tool]
 llm_with_tools = llm.bind_tools(tools)
 
 chain = prompt_template | llm_with_tools
 
+
 def chatbot(state: State):
     return {"messages": [chain.invoke(state["messages"])]}
 
+# def model_equation(state: State):
+#     return {"messages": [model_equation_chain.invoke(state["messages"])]}
 
 graph_builder.add_node("chatbot", chatbot)
+# graph_builder.add_node("model_equation", model_equation)
 
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
@@ -92,9 +113,21 @@ graph_builder.add_conditional_edges(
     "chatbot",
     tools_condition,
 )
+
 graph_builder.add_edge("tools", "chatbot")
+# graph_builder.add_edge("model_equation", "chatbot")
+# graph_builder.add_edge("chatbot", "model_equation")
+
 graph_builder.set_entry_point("chatbot")
 graph = graph_builder.compile(checkpointer=memory)
+
+from IPython.display import Image, display
+
+try:
+    display(Image(graph.get_graph().draw_mermaid_png()))
+except Exception:
+    # This requires some extra dependencies and is optional
+    pass
 
 def main():
     while True:
@@ -106,6 +139,8 @@ def main():
         for event in graph.stream({"messages": ("user", user_input)}, config=config):
             for value in event.values():
                 print("Assistant:", value["messages"][-1].content)
+
+
 
 if __name__ == "__main__":
     main()
