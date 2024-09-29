@@ -7,10 +7,9 @@ import os
 import json
 import yaml
 import gurobipy as gp
-from daisy.graph import create_and_review_application_code
+from graph import create_and_review_application_code
 
-from generic.graph import graph
-from utils.prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
+from prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
 
 # Initialize session state variables if they don't exist
 def initialize_session_state():
@@ -49,22 +48,22 @@ def collect_optimization_data(state):
         json.dump(data, f)
     return yaml.dump(data)
 
-# Run optimization function
-def run_optimization(state):
-    clear_session()
-    st.session_state.result_message = ""
-    st.session_state.results_placeholder.empty()
-    user_input = collect_optimization_data(state)
-    print("user_input", user_input)
-    config = {"configurable": {"thread_id": "1"}}
-    for event in graph.stream({"messages": ("user", user_input)}, config=config):
-        for value in event.values():
-            print("Assistant:", value["messages"][-1].content)
-            if type(value["messages"][-1].content) == str:
-                st.session_state.result_message += value["messages"][-1].content
-            st.session_state.results_placeholder.markdown(st.session_state.result_message)
-            # results_placeholder.markdown(st.session_state.results)
-            # print("Assistant:", value["messages"][-1].content)
+# # Run optimization function
+# def run_optimization(state):
+#     clear_session()
+#     st.session_state.result_message = ""
+#     st.session_state.results_placeholder.empty()
+#     user_input = collect_optimization_data(state)
+#     print("user_input", user_input)
+#     config = {"configurable": {"thread_id": "1"}}
+#     for event in graph.stream({"messages": ("user", user_input)}, config=config):
+#         for value in event.values():
+#             print("Assistant:", value["messages"][-1].content)
+#             if type(value["messages"][-1].content) == str:
+#                 st.session_state.result_message += value["messages"][-1].content
+#             st.session_state.results_placeholder.markdown(st.session_state.result_message)
+#             # results_placeholder.markdown(st.session_state.results)
+#             # print("Assistant:", value["messages"][-1].content)
 
 
 
@@ -113,7 +112,7 @@ def create_application(example_data, problem_statement):
     application_code = create_and_review_application_code.invoke(input_data)
     st.session_state.application_code = application_code
     
-    with open(os.path.join("session","current_application.py"), "w") as f:
+    with open(os.path.join("daisy","session","current_application.py"), "w") as f:
         f.write(st.session_state.application_code)
 
 # Page 1: Application Generator

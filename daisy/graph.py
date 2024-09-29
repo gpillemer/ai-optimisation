@@ -1,7 +1,7 @@
 from langchain_anthropic import ChatAnthropic
 
 
-from daisy.prompts import create_application_prompt_template, review_application_prompt
+from prompts import create_application_prompt_template
 from langchain_core.messages import AIMessage
 
 from bs4 import BeautifulSoup
