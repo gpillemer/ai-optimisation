@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 import os
 import json
 import yaml
+import gurobipy as gp
+from daisy.graph import create_and_review_application_code
 
 from generic.graph import graph
 from utils.prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
@@ -92,17 +94,24 @@ def generate_optimization_data_analysis(dataset, message_placeholder):
             message_placeholder.markdown(st.session_state.problem_statement)
 
 # Create application using Anthropic API
+# def create_application(example_data, problem_statement):
+#     st.session_state.application_code = None
+#     response = client.messages.create(
+#         model="claude-3-5-sonnet-20240620",
+#         max_tokens=2048,
+#         system=CREATE_APPLICATION_SYSTEM_PROMPT,
+#         messages=[{"role": "user", "content": CREATE_APPLICATION_USER_PROMPT.format(dataset=example_data, problem_statement=problem_statement)}]
+#     )
+#     application_code = response.content[0].text
+#     print(response.content)
+#     st.session_state.application_code = get_output(application_code)
+    
+#     with open(os.path.join("session","current_application.py"), "w") as f:
+#         f.write(st.session_state.application_code)
 def create_application(example_data, problem_statement):
-    st.session_state.application_code = None
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20240620",
-        max_tokens=2048,
-        system=CREATE_APPLICATION_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": CREATE_APPLICATION_USER_PROMPT.format(dataset=example_data, problem_statement=problem_statement)}]
-    )
-    application_code = response.content[0].text
-    print(response.content)
-    st.session_state.application_code = get_output(application_code)
+    input_data = f"{example_data}\n{problem_statement}"
+    application_code = create_and_review_application_code.invoke(input_data)
+    st.session_state.application_code = application_code
     
     with open(os.path.join("session","current_application.py"), "w") as f:
         f.write(st.session_state.application_code)
@@ -155,6 +164,9 @@ def page_two():
             exec(st.session_state.application_code)
             if not st.session_state.results_placeholder:
                 st.session_state.results_placeholder = st.empty()
+            if st.session_state.result_message:
+                st.session_state.results_placeholder.markdown(st.session_state.result_message)  
+            
                 
         except Exception as e:
             st.error(f"An error occurred: {e}")

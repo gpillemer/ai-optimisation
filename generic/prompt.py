@@ -128,6 +128,9 @@ model_code = inspect.getsource(create_and_solve_generic_model)
 
 
 
+system_prompt_text = SYSTEM_PROMPT_TEMPLATE.format(json_structure=json_structure, json_example=json_example, model_code=model_code)
+
+
 # system_prompt = ChatPromptTemplate.from_template(SYSTEM_PROMPT_TEMPLATE)
 # system_prompt = system_prompt.partial(json_structure=json_structure, json_example=json_example, model_code=model_code)
 
