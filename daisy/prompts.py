@@ -62,13 +62,7 @@ IMPORTANT:
 - DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
 - I REPEAT DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
 - DO NOT PRINT THE RESULTS OF THE MODEL IN THE FUNCTION. THE RESULTS WILL READ THE ST.SESSION_STATE['RESULT_MESSAGE'] AND DISPLAY IT IN THE APPLICATION
-- Be aware of the following common errors that have been raised for some previous applications you have created:    
-    - '>' not supported between instances of 'Var' and 'int'
-    - An error occurred: value (inf) must be <= 1.797e+308
-    - An error occurred: list index out of range
-    - 'Var' object is not iterable
-    - Unbounded or infeasible model.
-ONLY PROVIDE THE CODE FOR THE APPLICATION!! starting with and ending with:
+- MAKE SURE TO WRAP THE WORKING CODE WITHIN THE <daisyappoutput> TAGS AS SHOWN BELOW
 <daisyappoutput>
 import streamlit as st
 import pandas as pd
@@ -81,10 +75,8 @@ def create_and_solve_generic_model(locals_dict):
         # Collect data from inputs
         # Create gurobipy model
         # Solve model
-        # Display results as markdown
+        # Add the results to the session state
         st.session_state['result_message'] = results
-        ## st.markdown(st.session_state['result_message']) - This line is not required as the results will be displayed in the application
-        ## st.markdown(results) - This line is not required as the results will be displayed in the application
     except Exception as e or if model.status != gp.GRB.OPTIMAL:
         st.session_state['error_message'] = f"An error occurred: e"
         st.write(f"An error occurred: e")
@@ -114,11 +106,6 @@ REVIEW_APPLICATION_SYSTEM_PROMPT = """
 You are a streamlit expert. 
 Please review the applications you are provided and if you detect any syntax errors or gurobpy errors, please correct them.
 Return the corrected application code within the <daisyappoutput> tags.
-- Be aware of the following common errors that have been raised for some previous applications you have reviewed:    
-    - '>' not supported between instances of 'Var' and 'int'
-    - An error occurred: value (inf) must be <= 1.797e+308
-    - An error occurred: list index out of range
-    - 'Var' object is not iterable
 
 <daisyappoutput>
 import streamlit as st
@@ -146,11 +133,6 @@ FIX_APPLICATION_SYSTEM_PROMPT = """
 You are a streamlit expert.
 You have been provided with an application that has some syntax errors or gurobpy errors.
 Please correct the errors and return the corrected application code within the <daisyappoutput> tags.
-- Be aware of the following common errors that have been raised for some previous applications you have fixed:    
-    - '>' not supported between instances of 'Var' and 'int'
-    - An error occurred: value (inf) must be <= 1.797e+308
-    - An error occurred: list index out of range
-    - 'Var' object is not iterable
 """
 
 FIX_APPLICATION_USER_PROMPT = """
