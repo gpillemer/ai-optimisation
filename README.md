@@ -18,6 +18,11 @@ pip install -r requirements.txt
 streamlit run daisy/main.py
 ```
 
+### Add configurations
+```bash
+streamlit run daisy/main.py '{"use_o1":true}'
+```
+
 
 
 

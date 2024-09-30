@@ -59,7 +59,6 @@ Please create a dynamic application that:
 
 IMPORTANT:
 - DO NOT ADD ANY ADDITIONAL VISUALIZATIONS OR FEATURES AFTER THE RUN OPTIMIZATION BUTTON
-- DO NOT DEFINE def run_optimization() FUNCTION - it will be provided in the global scope
 - DO NOT set_page_config()
 - DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
 - I REPEAT DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
@@ -68,6 +67,7 @@ IMPORTANT:
     - An error occurred: value (inf) must be <= 1.797e+308
     - An error occurred: list index out of range
     - 'Var' object is not iterable
+    - Unbounded or infeasible model.
 ONLY PROVIDE THE CODE FOR THE APPLICATION!! starting with and ending with:
 <daisyappoutput>
 import streamlit as st
@@ -173,4 +173,15 @@ fix_application_prompt_template = ChatPromptTemplate.from_messages(
     ),
     ("user", FIX_APPLICATION_USER_PROMPT),
     ]  
+)
+
+
+CREATE_APPLICATION_O1_PROMPT = CREATE_APPLICATION_SYSTEM_PROMPT + CREATE_APPLICATION_USER_PROMPT
+create_application_prompt_template_o1 = ChatPromptTemplate.from_messages(
+    [
+    (
+        "user",
+        CREATE_APPLICATION_O1_PROMPT,
+    ),
+    ]
 )

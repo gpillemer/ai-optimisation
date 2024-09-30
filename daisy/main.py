@@ -12,12 +12,21 @@ from chain import get_application_create_chain, get_application_fix
 
 from prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
 
+CONFIGS = sys.argv[1]
 
-REVIEW_APPLICATION_CODE_ARG = sys.argv[1] if len(sys.argv) > 1 else False
-if REVIEW_APPLICATION_CODE_ARG:
-    review_application_code = True
+configs = json.loads(CONFIGS)
+
+if "review_application_code" in configs:
+    review_application_code = configs["review_application_code"]
 else:
     review_application_code = False
+
+if "use_o1" in configs:
+    use_o1 = configs["use_o1"]
+else:
+    use_o1 = False
+
+
 # Initialize session state variables if they don't exist
 def initialize_session_state():
     st.session_state.setdefault("application_code", "")
@@ -89,7 +98,7 @@ def generate_optimization_data_analysis(dataset, message_placeholder):
 
 def create_application(example_data, problem_statement):
     input_data = f"{example_data}\n{problem_statement}"
-    create_application_chain = get_application_create_chain(review_application_code=review_application_code)
+    create_application_chain = get_application_create_chain(review_application_code=review_application_code, use_o1=use_o1)
     application_code = create_application_chain.invoke(input_data)
     st.session_state.application_code = application_code
     
