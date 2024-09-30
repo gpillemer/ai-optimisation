@@ -59,6 +59,7 @@ Please create a dynamic application that:
 
 IMPORTANT:
 - DO NOT ADD ANY ADDITIONAL VISUALIZATIONS OR FEATURES AFTER THE RUN OPTIMIZATION BUTTON
+- DO NOT ADD BACKTICKS AROUND THE CODE
 - DO NOT set_page_config()
 - DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
 - I REPEAT DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
@@ -278,3 +279,5 @@ create_application_prompt_template_o1 = ChatPromptTemplate.from_messages(
     ),
     ]
 )
+
+create_application_prompt_template_o1 = create_application_prompt_template_o1.partial(EXAMPLE_APPLICATION_CODE=EXAMPLE_APPLICATION_CODE)
