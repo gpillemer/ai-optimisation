@@ -155,6 +155,13 @@ FIX_APPLICATION_USER_PROMPT = """
 You have been provided with an application that has some syntax errors or gurobpy errors.
 Here is the error message: {error_message}
 Please correct the application code provided {application_code} and return the corrected code.
+
+Remember to only correct the errors and not add any additional features.
+Make sure to wrap the working corrected code within the <daisyappoutput> tags as shown below:
+<daisyappoutput>
+import streamlit as st
+...
+</daisyappoutput>
 """
 
 
