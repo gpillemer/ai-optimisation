@@ -8,6 +8,7 @@ import os
 import json
 import yaml
 import gurobipy as gp
+from gurobipy import GRB
 from chain import get_application_create_chain, get_application_fix
 
 from prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
@@ -151,7 +152,7 @@ def page_two():
         st.write("Please generate an application first.")
     else:
         try:
-            exec(st.session_state.application_code)
+            exec(st.session_state.application_code,{"st":st, "gp":gp,"GRB":GRB},locals())
             if not st.session_state.results_placeholder:
                 st.session_state.results_placeholder = st.empty()
             if st.session_state.result_message:
