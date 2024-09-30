@@ -42,6 +42,7 @@ KEEP IT RELATIVELY SIMPLE. DON'T OVERCOMPLICATE IT.
 Don't provide solutions or run optimization code!!!!.
 """
 
+
 OPTIMIZATION_DATA_ANALYSER_USER_PROMPT = """
 Please review this data and provide insights on how it can be used to formulate an optimization problem: <dataset>{DATASET}</dataset>
 """
@@ -63,6 +64,10 @@ IMPORTANT:
 - I REPEAT DO NOT DO ANY FILE IMPORTS!!!!!! PLEASE GENERATE THE DATA IN THE APPLICATION
 - DO NOT PRINT THE RESULTS IN THE WORKING CODE. JUST ADD THE RESULTS TO THE SESSION STATE
 - MAKE SURE TO WRAP THE WORKING CODE WITHIN THE <daisyappoutput> TAGS AS SHOWN BELOW
+
+Heres an example of working code that you can use as a template:
+{EXAMPLE_APPLICATION_CODE}
+
 <daisyappoutput>
 import streamlit as st
 import gurobipy as gp
@@ -91,6 +96,107 @@ CREATE_APPLICATION_USER_PROMPT = """
 Please create a dynamic application that allows users to interact with this {input}.
 """
 
+EXAMPLE_APPLICATION_CODE = """
+import streamlit as st
+import gurobipy as gp
+from gurobipy import GRB
+import pandas as pd
+import numpy as np
+
+# Generate the data
+franchisee_data = pd.DataFrame({
+    'Franchisee': ['Alice', 'Badri', 'Cara', 'Dan', 'Emma', 'Fujita', 'Grace', 'Helen'],
+    'Demand': [30000, 40000, 50000, 20000, 30000, 45000, 80000, 18000],
+    'Current Supplier': [8.75] * 8,
+    'Terminal A': [8.3, 8.1, 8.3, 9.3, 10.1, 9.8, '-', 7.5],
+    'Terminal B': [10.2, 12, '-', 8, 10, 10, 8, 10]
+})
+
+supply_constraints = pd.DataFrame({
+    'Supplier': ['Current Supplier', 'Terminal A', 'Terminal B'],
+    'Supply constraint': [500000, 100000, 80000]
+})
+
+st.title("Fuel Supply Optimization")
+
+# Display and allow editing of franchisee data
+st.subheader("Franchisee Data")
+edited_franchisee_data = st.data_editor(franchisee_data, key="franchisee_data")
+
+# Display and allow editing of supply constraints
+st.subheader("Supply Constraints")
+edited_supply_constraints = st.data_editor(supply_constraints, key="supply_constraints")
+
+# Additional inputs
+st.subheader("Additional Parameters")
+min_supply_percentage = st.slider("Minimum supply percentage from each terminal", 0, 100, 10, key="min_supply_percentage")
+
+def create_and_solve_generic_model(locals_dict):
+    try:
+        # Collect data from inputs
+        franchisee_data = locals_dict['edited_franchisee_data']
+        supply_constraints = locals_dict['edited_supply_constraints']
+        min_supply_percentage = locals_dict['min_supply_percentage'] / 100
+
+        # Create gurobipy model
+        model = gp.Model("Fuel Supply Optimization")
+
+        # Create decision variables
+        suppliers = ['Current Supplier', 'Terminal A', 'Terminal B']
+        franchisees = franchisee_data['Franchisee'].tolist()
+        supply = model.addVars(suppliers, franchisees, name="supply")
+
+        # Set objective
+        obj = gp.quicksum(supply[s, f] * franchisee_data.loc[franchisee_data['Franchisee'] == f, s].values[0]
+                          for s in suppliers for f in franchisees
+                          if franchisee_data.loc[franchisee_data['Franchisee'] == f, s].values[0] != '-')
+        model.setObjective(obj, GRB.MINIMIZE)
+
+        # Add constraints
+        # Meet demand for each franchisee
+        for f in franchisees:
+            model.addConstr(gp.quicksum(supply[s, f] for s in suppliers) == franchisee_data.loc[franchisee_data['Franchisee'] == f, 'Demand'].values[0])
+
+        # Supply constraints
+        for s in suppliers:
+            model.addConstr(gp.quicksum(supply[s, f] for f in franchisees) <= supply_constraints.loc[supply_constraints['Supplier'] == s, 'Supply constraint'].values[0])
+
+        # Minimum supply percentage from terminals
+        total_demand = franchisee_data['Demand'].sum()
+        for s in ['Terminal A', 'Terminal B']:
+            model.addConstr(gp.quicksum(supply[s, f] for f in franchisees) >= min_supply_percentage * total_demand)
+
+        # Non-negative supply and unavailable routes
+        for s in suppliers:
+            for f in franchisees:
+                if franchisee_data.loc[franchisee_data['Franchisee'] == f, s].values[0] == '-':
+                    model.addConstr(supply[s, f] == 0)
+                else:
+                    model.addConstr(supply[s, f] >= 0)
+
+        # Solve model
+        model.optimize()
+
+        # Prepare results
+        if model.status == GRB.OPTIMAL:
+            results = pd.DataFrame(
+                [(s, f, supply[s, f].X) for s in suppliers for f in franchisees],
+                columns=['Supplier', 'Franchisee', 'Supply Amount']
+            ).to_markdown(index=False)
+            total_cost = model.objVal
+            # Store the result message in session state
+            st.session_state['result_message'] = f"### Optimal solution found. \nTotal cost: ${total_cost:.2f}\n### Results: \n{results}"
+            st.session_state['results'] = results  # Store results in session state
+        else:
+            st.session_state['error_message'] = "No optimal solution found."
+
+    except Exception as e:
+        st.session_state['error_message'] = f"An error occurred: {str(e)}"
+
+# Run optimization function
+st.button("Solve Model", key="solve_model", on_click=create_and_solve_generic_model, args=(locals(),))
+"""
+
 
 create_application_prompt_template = ChatPromptTemplate.from_messages(
     [
@@ -101,6 +207,8 @@ create_application_prompt_template = ChatPromptTemplate.from_messages(
     ("user", CREATE_APPLICATION_USER_PROMPT),
     ]
 )
+
+create_application_prompt_template = create_application_prompt_template.partial(EXAMPLE_APPLICATION_CODE=EXAMPLE_APPLICATION_CODE)
 
 
 REVIEW_APPLICATION_SYSTEM_PROMPT = """

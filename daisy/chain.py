@@ -13,7 +13,7 @@ def get_output(ai_message: AIMessage):
     return soup.find("daisyappoutput").text
 
 
-llm = ChatAnthropic(model="claude-3-5-sonnet-20240620", max_tokens=8192)
+llm = ChatAnthropic(model="claude-3-5-sonnet-20240620", max_tokens=8192, temperature=0.05)
 llm_o1 = ChatOpenAI(model="o1-preview-2024-09-12", temperature=1)
 
 create_application_chain = create_application_prompt_template | llm | get_output

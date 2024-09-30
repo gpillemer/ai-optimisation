@@ -152,7 +152,7 @@ def page_two():
         st.write("Please generate an application first.")
     else:
         try:
-            exec(st.session_state.application_code,{"st":st, "gp":gp,"GRB":GRB},locals())
+            exec(st.session_state.application_code,{"st":st, "gp":gp,"GRB":GRB,"pd":pd},locals())
             if not st.session_state.results_placeholder:
                 st.session_state.results_placeholder = st.empty()
             if st.session_state.result_message:
