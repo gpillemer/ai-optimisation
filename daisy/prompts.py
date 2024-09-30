@@ -84,7 +84,11 @@ def create_and_solve_generic_model(locals_dict):
     st.session_state['result_message'] = results
 
 # Run optimization function
-st.button("Solve Model", key="solve_model", on_click=create_and_solve_generic_model, args=(locals(),))
+try:
+    st.button("Solve Model", key="solve_model", on_click=create_and_solve_generic_model, args=(locals(),))
+except Exception as e:
+    st.session_state['error_message'] = f"An error occurred: e"
+    st.write(f"An error occurred: e")
 </daisyappoutput>
 """
 
@@ -108,6 +112,12 @@ REVIEW_APPLICATION_SYSTEM_PROMPT = """
 You are a streamlit expert. 
 Please review the applications you are provided and if you detect any syntax errors or gurobpy errors, please correct them.
 Return the corrected application code within the <daisyappoutput> tags.
+- Be aware of the following common errors that have been raised for some previous applications you have reviewed:    
+    - '>' not supported between instances of 'Var' and 'int'
+    - An error occurred: value (inf) must be <= 1.797e+308
+    - An error occurred: list index out of range
+    - 'Var' object is not iterable
+
 <daisyappoutput>
 import streamlit as st
 ...
@@ -119,7 +129,7 @@ Please review the application code provided {application_code} and correct any s
 """
 
 
-review_application_prompt = ChatPromptTemplate.from_messages(
+review_application_prompt_template = ChatPromptTemplate.from_messages(
     [
     (
         "system",
@@ -127,4 +137,33 @@ review_application_prompt = ChatPromptTemplate.from_messages(
     ),
     ("user", REVIEW_APPLICATION_USER_PROMPT),
     ]
+)
+
+
+FIX_APPLICATION_SYSTEM_PROMPT = """
+You are a streamlit expert.
+You have been provided with an application that has some syntax errors or gurobpy errors.
+Please correct the errors and return the corrected application code within the <daisyappoutput> tags.
+- Be aware of the following common errors that have been raised for some previous applications you have fixed:    
+    - '>' not supported between instances of 'Var' and 'int'
+    - An error occurred: value (inf) must be <= 1.797e+308
+    - An error occurred: list index out of range
+    - 'Var' object is not iterable
+"""
+
+FIX_APPLICATION_USER_PROMPT = """
+You have been provided with an application that has some syntax errors or gurobpy errors.
+Here is the error message: {error_message}
+Please correct the application code provided {application_code} and return the corrected code.
+"""
+
+
+fix_application_prompt_template = ChatPromptTemplate.from_messages(
+    [
+    (
+        "system",
+        FIX_APPLICATION_SYSTEM_PROMPT,
+    ),
+    ("user", FIX_APPLICATION_USER_PROMPT),
+    ]  
 )

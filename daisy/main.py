@@ -1,3 +1,4 @@
+import sys
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,10 +8,16 @@ import os
 import json
 import yaml
 import gurobipy as gp
-from graph import create_and_review_application_code
+from chain import get_application_create_chain, get_application_fix
 
 from prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
 
+
+REVIEW_APPLICATION_CODE_ARG = sys.argv[1] if len(sys.argv) > 1 else False
+if REVIEW_APPLICATION_CODE_ARG:
+    review_application_code = True
+else:
+    review_application_code = False
 # Initialize session state variables if they don't exist
 def initialize_session_state():
     st.session_state.setdefault("application_code", "")
@@ -35,11 +42,6 @@ def clear_session():
             os.remove(os.path.join(session_dir, file))
 
 def collect_optimization_data(state):
-    # data = {}
-    # for k, v in st.session_state.items():
-    #     # if k not in ["application_code", "result_message","results_placeholder", "uploaded_files", "run_optimization", "load_application"] and not k.startswith("_"):
-    #     data[k] = str(st.session_state[k])
-    # print(data)
     data = {}
     for k, v in state.items():
         if k not in ["application_code", "result_message","results_placeholder", "uploaded_files", "run_optimization", "load_application"] and not k.startswith("_"):
@@ -48,29 +50,21 @@ def collect_optimization_data(state):
         json.dump(data, f)
     return yaml.dump(data)
 
-# # Run optimization function
-# def run_optimization(state):
-#     clear_session()
-#     st.session_state.result_message = ""
-#     st.session_state.results_placeholder.empty()
-#     user_input = collect_optimization_data(state)
-#     print("user_input", user_input)
-#     config = {"configurable": {"thread_id": "1"}}
-#     for event in graph.stream({"messages": ("user", user_input)}, config=config):
-#         for value in event.values():
-#             print("Assistant:", value["messages"][-1].content)
-#             if type(value["messages"][-1].content) == str:
-#                 st.session_state.result_message += value["messages"][-1].content
-#             st.session_state.results_placeholder.markdown(st.session_state.result_message)
-#             # results_placeholder.markdown(st.session_state.results)
-#             # print("Assistant:", value["messages"][-1].content)
-
-
 
 # Load application code from file
 def load_application():
-    with open(os.path.join("session","current_application.py"), "r") as f:
+    with open(os.path.join("daisy","session","current_application.py"), "r") as f:
         st.session_state.application_code = f.read()
+
+def fix_application_error_and_reload():
+    application_error = st.session_state.error_message
+    current_application = st.session_state.application_code
+    new_application = get_application_fix(application_error, current_application)
+    with open(os.path.join("daisy","session","current_application.py"), "w") as f:
+        f.write(new_application)
+        st.session_state.application_code = new_application
+        st.session_state.error_message = None
+
 
 # Extract output content from Anthropic response
 def get_output(input_string):
@@ -92,24 +86,11 @@ def generate_optimization_data_analysis(dataset, message_placeholder):
             st.session_state.problem_statement += text
             message_placeholder.markdown(st.session_state.problem_statement)
 
-# Create application using Anthropic API
-# def create_application(example_data, problem_statement):
-#     st.session_state.application_code = None
-#     response = client.messages.create(
-#         model="claude-3-5-sonnet-20240620",
-#         max_tokens=2048,
-#         system=CREATE_APPLICATION_SYSTEM_PROMPT,
-#         messages=[{"role": "user", "content": CREATE_APPLICATION_USER_PROMPT.format(dataset=example_data, problem_statement=problem_statement)}]
-#     )
-#     application_code = response.content[0].text
-#     print(response.content)
-#     st.session_state.application_code = get_output(application_code)
-    
-#     with open(os.path.join("session","current_application.py"), "w") as f:
-#         f.write(st.session_state.application_code)
+
 def create_application(example_data, problem_statement):
     input_data = f"{example_data}\n{problem_statement}"
-    application_code = create_and_review_application_code.invoke(input_data)
+    create_application_chain = get_application_create_chain(review_application_code=review_application_code)
+    application_code = create_application_chain.invoke(input_data)
     st.session_state.application_code = application_code
     
     with open(os.path.join("daisy","session","current_application.py"), "w") as f:
@@ -166,6 +147,9 @@ def page_two():
             if st.session_state.result_message:
                 st.session_state.results_placeholder.markdown(st.session_state.result_message)  
             
+            if st.session_state.get("error_message"):
+                st.button("Fix Error and Reload Application", key="fix_error", on_click=fix_application_error_and_reload)
+                st.write(st.session_state.error_message)
                 
         except Exception as e:
             st.error(f"An error occurred: {e}")
