@@ -12,20 +12,21 @@ from chain import get_application_create_chain, get_application_fix
 
 from prompts import OPTIMIZATION_DATA_ANALYSER_SYSTEM_PROMPT, OPTIMIZATION_DATA_ANALYSER_USER_PROMPT, CREATE_APPLICATION_SYSTEM_PROMPT, CREATE_APPLICATION_USER_PROMPT
 
-CONFIGS = sys.argv[1]
+default_configs = {
+    "review_application_code": False,
+    "use_o1": False
+}
 
-configs = json.loads(CONFIGS)
-
-if "review_application_code" in configs:
-    review_application_code = configs["review_application_code"]
+if len(sys.argv) > 1:
+    CONFIGS = sys.argv[1]
+    configs = json.loads(CONFIGS)
+    configs = {k: v for k, v in configs.items() if k in default_configs}
 else:
-    review_application_code = False
+    configs = default_configs
 
-if "use_o1" in configs:
-    use_o1 = configs["use_o1"]
-else:
-    use_o1 = False
 
+review_application_code = configs.get("review_application_code", False)
+use_o1 = configs.get("use_o1", False)
 
 # Initialize session state variables if they don't exist
 def initialize_session_state():

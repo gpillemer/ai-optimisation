@@ -83,7 +83,7 @@ def create_and_solve_generic_model(locals_dict):
         # Solve model
         # Display results as markdown
         st.session_state['result_message'] = results
-    except Exception as e:
+    except Exception as e or if model.status != gp.GRB.OPTIMAL:
         st.session_state['error_message'] = f"An error occurred: e"
         st.write(f"An error occurred: e")
 
