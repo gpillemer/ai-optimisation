@@ -77,18 +77,18 @@ import gurobipy as gp
 # Create application components here...
 
 def create_and_solve_generic_model(locals_dict):
-    # Collect data from inputs
-    # Create gurobipy model
-    # Solve model
-    # Display results as markdown
-    st.session_state['result_message'] = results
+    try:
+        # Collect data from inputs
+        # Create gurobipy model
+        # Solve model
+        # Display results as markdown
+        st.session_state['result_message'] = results
+    except Exception as e:
+        st.session_state['error_message'] = f"An error occurred: e"
+        st.write(f"An error occurred: e")
 
 # Run optimization function
-try:
-    st.button("Solve Model", key="solve_model", on_click=create_and_solve_generic_model, args=(locals(),))
-except Exception as e:
-    st.session_state['error_message'] = f"An error occurred: e"
-    st.write(f"An error occurred: e")
+st.button("Solve Model", key="solve_model", on_click=create_and_solve_generic_model, args=(locals(),))
 </daisyappoutput>
 """
 

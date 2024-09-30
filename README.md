@@ -1,5 +1,25 @@
 # Quickstart
 
+## DAISY
+
+#### Install Dependencies
+
+1. Create virtual environment and install pip packages
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+2. Ensure you have a [trial guropbipy license](https://www.gurobi.com/free-trial/):
+
+### Run DAISY Application
+```bash
+streamlit run daisy/main.py
+```
+
+
+
 
 ## Generic Optimiser
 
